@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import ai, dashboard, firewall, network, scan, system, usb
+from api.routes import ai, auth, dashboard, firewall, network, scan, system, usb
 from services.bootstrap import initialize_database
 
 
@@ -30,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(system.router)
 app.include_router(scan.router)
@@ -45,6 +46,7 @@ def read_root():
         "message": "AI Defender Enterprise API",
         "status": "online",
         "modules": [
+            "auth",
             "dashboard",
             "system",
             "scan",
