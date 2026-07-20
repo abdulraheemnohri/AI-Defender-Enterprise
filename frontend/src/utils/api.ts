@@ -9,6 +9,27 @@ const api = axios.create({
 });
 
 
+export const loginUser = async (credentials: {
+  username: string;
+  password?: string;
+  pin?: string;
+  role: string;
+  remember_me: boolean;
+}) => {
+  const response = await api.post("/auth/login", credentials);
+  return response.data;
+};
+
+export const verifyMFA = async (verification: { token: string; code: string }) => {
+  const response = await api.post("/auth/verify-2fa", verification);
+  return response.data;
+};
+
+export const getAuditLogs = async () => {
+  const response = await api.get("/auth/audit-logs");
+  return response.data;
+};
+
 export const getDashboard = async () => {
   const response = await api.get("/dashboard");
   return response.data;
@@ -21,6 +42,21 @@ export const getProcesses = async () => {
 
 export const getProcess = async (pid: number) => {
   const response = await api.get(`/scan/processes/${pid}`);
+  return response.data;
+};
+
+export const killProcess = async (pid: number) => {
+  const response = await api.post(`/scan/processes/${pid}/kill`);
+  return response.data;
+};
+
+export const suspendProcess = async (pid: number) => {
+  const response = await api.post(`/scan/processes/${pid}/suspend`);
+  return response.data;
+};
+
+export const startScan = async (scanType: string) => {
+  const response = await api.post("/scan/start-scan", { scan_type: scanType });
   return response.data;
 };
 
@@ -45,18 +81,38 @@ export const addFirewallRule = async (rule: {
   return response.data;
 };
 
-export const explainThreat = async (query: string) => {
-  const response = await api.post("/ai/explain", { query });
+export const deleteFirewallRule = async (id: number) => {
+  const response = await api.delete(`/firewall/rules/${id}`);
   return response.data;
 };
 
-export const chatWithAI = async (messages: Array<{ role: string; content: string }>) => {
-  const response = await api.post("/ai/chat", { messages });
+export const toggleFirewallRule = async (id: number) => {
+  const response = await api.post(`/firewall/rules/${id}/toggle`);
+  return response.data;
+};
+
+export const importFirewallRules = async (rules: Array<any>) => {
+  const response = await api.post("/firewall/rules/import", rules);
+  return response.data;
+};
+
+export const explainThreat = async (query: string, model: string = "gemma") => {
+  const response = await api.post("/ai/explain", { query, model });
+  return response.data;
+};
+
+export const chatWithAI = async (messages: Array<{ role: string; content: string }>, model: string = "gemma") => {
+  const response = await api.post("/ai/chat", { messages, model });
   return response.data;
 };
 
 export const getUSBDevices = async () => {
   const response = await api.get("/usb/devices");
+  return response.data;
+};
+
+export const toggleUSBDevice = async (name: string) => {
+  const response = await api.post("/usb/devices/toggle", { name });
   return response.data;
 };
 

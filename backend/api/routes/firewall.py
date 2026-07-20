@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from database.database import get_db
 from database.models import FirewallRule
@@ -21,3 +22,43 @@ def create_firewall_rule(payload: FirewallRuleCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(rule)
     return rule
+
+
+@router.delete("/rules/{rule_id}")
+def delete_firewall_rule(rule_id: int, db: Session = Depends(get_db)):
+    rule = db.query(FirewallRule).filter(FirewallRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Firewall rule {rule_id} not found."
+        )
+    db.delete(rule)
+    db.commit()
+    return {"message": f"Successfully deleted firewall rule {rule_id}", "id": rule_id}
+
+
+@router.post("/rules/{rule_id}/toggle")
+def toggle_firewall_rule(rule_id: int, db: Session = Depends(get_db)):
+    rule = db.query(FirewallRule).filter(FirewallRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Firewall rule {rule_id} not found."
+        )
+    rule.enabled = not rule.enabled
+    db.commit()
+    db.refresh(rule)
+    return {"message": f"Successfully toggled firewall rule {rule_id} state", "enabled": rule.enabled}
+
+
+@router.post("/rules/import", response_model=List[FirewallRuleRead])
+def import_firewall_rules(payload: List[FirewallRuleCreate], db: Session = Depends(get_db)):
+    imported_rules = []
+    for r in payload:
+        rule = FirewallRule(**r.model_dump())
+        db.add(rule)
+        imported_rules.append(rule)
+    db.commit()
+    for rule in imported_rules:
+        db.refresh(rule)
+    return imported_rules
