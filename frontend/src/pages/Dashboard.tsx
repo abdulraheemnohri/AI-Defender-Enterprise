@@ -17,12 +17,17 @@ import {
   DialogActions,
   Paper,
   Divider,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import TerminateIcon from "@mui/icons-material/CancelRounded";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
+import GppBadRoundedIcon from "@mui/icons-material/GppBadRounded";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
+import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate } from "react-router-dom";
 import {
   Area,
@@ -36,7 +41,7 @@ import {
 
 import { MetricCard } from "../components/common/MetricCard";
 import { PanelCard } from "../components/common/PanelCard";
-import { getDashboard, killProcess, suspendProcess, explainThreat } from "../utils/api";
+import { getDashboard, killProcess, suspendProcess, explainThreat, getIsolationStatus, toggleIsolationStatus } from "../utils/api";
 
 
 type DashboardState = {
@@ -117,6 +122,7 @@ export const Dashboard = () => {
   const [data, setData] = useState<DashboardState>(fallbackDashboard);
   const [loading, setLoading] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
+  const [isolated, setIsolated] = useState(false);
 
   // Detail Dialogs States
   const [selectedProcess, setSelectedProcess] = useState<any>(null);
@@ -131,25 +137,33 @@ export const Dashboard = () => {
   const [liveRam, setLiveRam] = useState(61);
   const [liveNetwork, setLiveNetwork] = useState(124);
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const payload = await getDashboard();
-        // If success, store
-        setData(payload);
-        if (payload.metrics) {
-          // parse numerical values for live ticking baseline
-          setLiveCpu(parseInt(payload.metrics[0]?.value) || 27);
-          setLiveRam(parseInt(payload.metrics[1]?.value) || 61);
-        }
-      } catch (error) {
-        setOfflineMode(true);
-      } finally {
-        setLoading(false);
+  const loadDashboard = async () => {
+    try {
+      const payload = await getDashboard();
+      // If success, store
+      setData(payload);
+      if (payload.metrics) {
+        // parse numerical values for live ticking baseline
+        setLiveCpu(parseInt(payload.metrics[0]?.value) || 27);
+        setLiveRam(parseInt(payload.metrics[1]?.value) || 61);
       }
-    };
+    } catch (error) {
+      setOfflineMode(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const loadIsolationStatus = async () => {
+    try {
+      const res = await getIsolationStatus();
+      setIsolated(res.isolated);
+    } catch (err) {}
+  };
+
+  useEffect(() => {
     loadDashboard();
+    loadIsolationStatus();
 
     // Ticker to simulate real-time performance data activity
     const interval = setInterval(() => {
@@ -174,9 +188,9 @@ export const Dashboard = () => {
       { label: "CPU Usage", value: `${liveCpu}%`, delta: liveCpu > 40 ? "+5%" : "-2%", status: liveCpu > 80 ? "warning" : "healthy" },
       { label: "Memory Usage", value: `${liveRam}%`, delta: "+1%", status: liveRam > 80 ? "warning" : "healthy" },
       { label: "Disk Usage", value: "48%", delta: "0%", status: "healthy" },
-      { label: "Network Traffic", value: `${liveNetwork} Mbps`, delta: "+8%", status: "active" },
+      { label: "Network Traffic", value: isolated ? "0 Mbps (Isolated)" : `${liveNetwork} Mbps`, delta: isolated ? "-100%" : "+8%", status: isolated ? "warning" : "active" },
     ];
-  }, [liveCpu, liveRam, liveNetwork]);
+  }, [liveCpu, liveRam, liveNetwork, isolated]);
 
   const scoreTone = useMemo(() => {
     if (data.security_score >= 90) {
@@ -187,6 +201,17 @@ export const Dashboard = () => {
     }
     return "error";
   }, [data.security_score]);
+
+  // Handle emergency isolation toggle
+  const handleToggleIsolation = async () => {
+    try {
+      const res = await toggleIsolationStatus();
+      setIsolated(res.isolated);
+      alert(res.message);
+    } catch (err) {
+      setIsolated((prev) => !prev);
+    }
+  };
 
   // Handle killing a process
   const handleKillProcess = async (pid: number) => {
@@ -267,7 +292,40 @@ export const Dashboard = () => {
             Unified visibility across endpoint, network, AI orchestration, and containment playbooks.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          {/* Workstation Emergency containment lock switch */}
+          <Paper
+            variant="outlined"
+            sx={{
+              px: 2,
+              py: 0.5,
+              borderColor: isolated ? "error.main" : "rgba(255,255,255,0.12)",
+              bgcolor: isolated ? "rgba(244, 67, 54, 0.08)" : "rgba(255,255,255,0.02)",
+              borderRadius: 3,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isolated}
+                  onChange={handleToggleIsolation}
+                  color="error"
+                  size="small"
+                />
+              }
+              label={
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  {isolated ? <LockIcon color="error" /> : <LockOpenIcon color="primary" />}
+                  <Typography variant="caption" fontWeight={700} color={isolated ? "error" : "text.secondary"}>
+                    {isolated ? "HOST ISOLATED" : "HOST ENFORCED"}
+                  </Typography>
+                </Stack>
+              }
+            />
+          </Paper>
+
           <Button
             variant="contained"
             startIcon={<PlayArrowRoundedIcon />}
@@ -291,6 +349,21 @@ export const Dashboard = () => {
         </Alert>
       ) : null}
 
+      {isolated && (
+        <Alert
+          severity="error"
+          icon={<GppBadRoundedIcon />}
+          sx={{
+            borderRadius: 3,
+            fontWeight: 700,
+            border: "1px solid #f44336",
+            bgcolor: "rgba(244, 67, 54, 0.15)",
+          }}
+        >
+          CRITICAL ALERT: EMERGENCY HOST ISOLATION IS ENGAGED. ALL NON-ESSENTIAL OUTBOUND SOCKET CONNECTIONS ARE BEING BLOCKED LOCALLY.
+        </Alert>
+      )}
+
       {/* Metrics Row */}
       <Grid container spacing={2.5}>
         <Grid item xs={12} md={3}>
@@ -300,9 +373,13 @@ export const Dashboard = () => {
             ) : (
               <Stack spacing={1.5}>
                 <Typography variant="h2" sx={{ fontWeight: 800 }}>
-                  {data.security_score}
+                  {isolated ? 65 : data.security_score}
                 </Typography>
-                <Chip label={data.threat_level} color={scoreTone} variant="outlined" />
+                <Chip
+                  label={isolated ? "CRITICAL LOCKDOWN" : data.threat_level}
+                  color={isolated ? "error" : scoreTone}
+                  variant="outlined"
+                />
               </Stack>
             )}
           </PanelCard>
@@ -339,31 +416,31 @@ export const Dashboard = () => {
             >
               <svg width="100%" height="100%" viewBox="0 0 500 250">
                 {/* Connections Lines */}
-                <line x1="100" y1="125" x2="250" y2="125" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
-                <path d="M 250 125 Q 320 60 380 70" fill="none" stroke="#4CAF50" strokeWidth="2" strokeDasharray="5,5" />
-                <path d="M 250 125 Q 320 190 380 180" fill="none" stroke="#F44336" strokeWidth="2" />
+                <line x1="100" y1="125" x2="250" y2="125" stroke={isolated ? "rgba(244,67,54,0.3)" : "rgba(255,255,255,0.15)"} strokeWidth="2" />
+                <path d="M 250 125 Q 320 60 380 70" fill="none" stroke={isolated ? "rgba(244,67,54,0.3)" : "#4CAF50"} strokeWidth="2" strokeDasharray="5,5" />
+                <path d="M 250 125 Q 320 190 380 180" fill="none" stroke="#F44336" strokeWidth={isolated ? "3" : "2"} />
 
                 {/* Local Node */}
-                <circle cx="250" cy="125" r="28" fill="rgba(33, 150, 243, 0.2)" stroke="#2196F3" strokeWidth="2" />
-                <text x="250" y="129" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="bold">HOST</text>
+                <circle cx="250" cy="125" r="28" fill={isolated ? "rgba(244, 67, 54, 0.2)" : "rgba(33, 150, 243, 0.2)"} stroke={isolated ? "#F44336" : "#2196F3"} strokeWidth="2" />
+                <text x="250" y="129" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="bold">{isolated ? "LOCK" : "HOST"}</text>
 
                 {/* Gateway Node */}
-                <circle cx="100" cy="125" r="18" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-                <text x="100" y="128" textAnchor="middle" fill="#9CA8C3" fontSize="8">LAN</text>
+                <circle cx="100" cy="125" r="18" fill="rgba(255,255,255,0.05)" stroke={isolated ? "#F44336" : "rgba(255,255,255,0.3)"} strokeWidth="1.5" />
+                <text x="100" y="128" textAnchor="middle" fill="#9CA8C3" fontSize="8">{isolated ? "CUT" : "LAN"}</text>
 
                 {/* Trusted External Node */}
-                <circle cx="380" cy="70" r="18" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" strokeWidth="1.5" />
-                <text x="380" y="73" textAnchor="middle" fill="#4CAF50" fontSize="8">SOC CLOUD</text>
+                <circle cx="380" cy="70" r="18" fill="rgba(76, 175, 80, 0.1)" stroke={isolated ? "#F44336" : "#4CAF50"} strokeWidth="1.5" />
+                <text x="380" y="73" textAnchor="middle" fill={isolated ? "#F44336" : "#4CAF50"} fontSize="8">SOC CLOUD</text>
 
                 {/* Suspicious External IP Node */}
                 <circle cx="380" cy="180" r="20" fill="rgba(244, 67, 54, 0.15)" stroke="#F44336" strokeWidth="1.5" />
                 <text x="380" y="183" textAnchor="middle" fill="#F44336" fontSize="8" fontWeight="bold">TOR C2</text>
 
                 {/* Floating telemetry alerts */}
-                <text x="310" y="215" fill="#F44336" fontSize="8" fontWeight="bold">⚠️ BLOCKED: Outbound to Tor Node</text>
+                <text x="310" y="215" fill="#F44336" fontSize="8" fontWeight="bold">{isolated ? "⛔ EMERGENCY SHIELD: Outbounds dropped" : "⚠️ BLOCKED: Outbound to Tor Node"}</text>
               </svg>
               <Box sx={{ position: "absolute", top: 12, left: 12 }}>
-                <Chip size="small" label="Live Endpoint Topology" color="primary" variant="outlined" />
+                <Chip size="small" label={isolated ? "Containment Mode Active" : "Live Endpoint Topology"} color={isolated ? "error" : "primary"} variant="outlined" />
               </Box>
             </Box>
           </PanelCard>
@@ -448,6 +525,15 @@ export const Dashboard = () => {
           <PanelCard title="Quick Actions Console" subtitle="Enforce defense triggers">
             <Stack spacing={1.8}>
               <Button
+                variant="contained"
+                fullWidth
+                color={isolated ? "success" : "error"}
+                startIcon={isolated ? <LockOpenIcon /> : <GppBadRoundedIcon />}
+                onClick={handleToggleIsolation}
+              >
+                {isolated ? "Recover Host Connection" : "Isolate Workstation Now"}
+              </Button>
+              <Button
                 variant="outlined"
                 fullWidth
                 color="primary"
@@ -469,15 +555,6 @@ export const Dashboard = () => {
                 onClick={() => navigate("/reports")}
               >
                 Generate Compliance Report
-              </Button>
-              <Button
-                variant="contained"
-                fullWidth
-                color="secondary"
-                startIcon={<AutoAwesomeRoundedIcon />}
-                onClick={() => navigate("/ai-defender")}
-              >
-                Open AI Security Assistant
               </Button>
             </Stack>
           </PanelCard>

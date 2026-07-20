@@ -32,7 +32,7 @@ import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
 import FileUploadRoundedIcon from "@mui/icons-material/FileUploadRounded";
 
 import { PanelCard } from "../components/common/PanelCard";
-import { getFirewallRules, addFirewallRule, deleteFirewallRule, toggleFirewallRule, importFirewallRules } from "../utils/api";
+import { getFirewallRules, addFirewallRule, deleteFirewallRule, toggleFirewallRule, importFirewallRules, promoteSuggestedRule } from "../utils/api";
 
 
 type FirewallRule = {
@@ -178,7 +178,7 @@ export const FirewallPage = () => {
     };
 
     try {
-      const newRule = await addFirewallRule(payload);
+      const newRule = await promoteSuggestedRule(payload);
       setRules((prev) => [...prev, newRule]);
     } catch (err) {
       // Fallback

@@ -62,3 +62,19 @@ def import_firewall_rules(payload: List[FirewallRuleCreate], db: Session = Depen
     for rule in imported_rules:
         db.refresh(rule)
     return imported_rules
+
+
+@router.post("/rules/promote", response_model=FirewallRuleRead)
+def promote_suggested_rule(payload: FirewallRuleCreate, db: Session = Depends(get_db)):
+    """
+    Promote an AI-suggested rule or offline threat recommendation to an active system-enforced firewall rule.
+    """
+    # Enforce active promotion logic
+    rule_data = payload.model_dump()
+    # Ensure it's active immediately upon promotion
+    rule_data["enabled"] = True
+    new_rule = FirewallRule(**rule_data)
+    db.add(new_rule)
+    db.commit()
+    db.refresh(new_rule)
+    return new_rule

@@ -1,116 +1,82 @@
 # AI Defender Enterprise
-**Local-First AI-Powered Cybersecurity Platform**
+**AI-Powered Local Cyber Defense & Automated Endpoint Containment Platform**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
-[![React 18](https://img.shields.io/badge/react-18-blue.svg)](https://reactjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![React 18](https://img.shields.io/badge/React-18-cyan.svg)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Production--Grade-emerald.svg)](https://fastapi.tiangolo.com/)
 
----
+AI Defender Enterprise is a fully offline, privacy-first enterprise-grade cybersecurity platform. It combines antivirus, local Endpoint Detection & Response (EDR), Intrusion Detection System (IDS), stateful firewall management, vulnerability scanning, patch control workflow approvals, YARA/Sigma rules compilation checkers, virtual sandboxing, and local AI orchestration.
 
-## **🚀 Features**
-- ✅ **Real-time threat detection** (behavioral + signature-based)
-- ✅ **Local AI models** for explanations and recommendations (Gemma, Phi, Qwen)
-- ✅ **Firewall management** (allow/block apps, IPs, ports)
-- ✅ **USB and network protection**
-- ✅ **Offline operation** (no cloud dependency)
-- ✅ **Dark theme dashboard** with Material Design 3
-- ✅ **Process, file, and network monitoring**
+All behavioral analysis and transformer neural network inference occur on-device without cloud connectivity, keeping enterprise telemetry strictly on-premise.
 
 ---
 
-## **📥 Quick Start**
-### **Prerequisites**
-- **Python 3.11+** ([Download](https://www.python.org/downloads/))
-- **Node.js 20+** ([Download](https://nodejs.org/))
-- **Git** ([Download](https://git-scm.com/))
+## 📖 Production Guides & Documentation
+
+To assist security engineers and system administrators, detailed structural guides are provided:
+* 📘 **[Administrator & Operations Guide](docs/ADMINISTRATOR_GUIDE.md):** Configuration manuals, user role accounts setups, emergency isolation workflows, and promotion of AI suggested rules.
+* 📙 **[Architecture & Models Specification](docs/ARCHITECTURE_AND_MODELS.md):** Relational database schemas, local llama.cpp / ONNX execution engines, memory profiles, hardware standards, and CPU/GPU thread optimizations.
 
 ---
 
-### **1. Clone the Repository**
+## 🚀 Key Feature Set
+
+* **Emergency Workstation Isolation:** Instantly sever outbound network interface sockets and isolate host systems directly from the Dashboard during active malware outbreaks.
+* **Firewall Policy Desk & AI Suggestion Promotion:** Enforce custom IP, port, and protocol filters, and elevate suggested rules from the AI behavioral engine to active policies with a single click.
+* **Local AI Model Orchestrator:** Dynamic thread optimization, layer-offloading configurations, and integrated prompt execution speed benchmark tests (Gemma-2B, Phi-3, Qwen).
+* **Virtual Sandboxing:** Isolate suspicious payloads inside virtual environments with custom parameters (registry virtualization, outbound DNS blocks).
+* **Vulnerability & Patch Center:** Automated open port scanners, registry checking, missing Windows cumulative updates listings, and patch approval/rollback workflows.
+* **YARA & Sigma Engineering Console:** Interactive rule builders with sandboxed syntax parsing compilers to check syntax accuracy prior to deployment.
+* **Multi-Role User Directory Directory:** Manage security operator credentials, track active logins, and execute instant session token revocations.
+
+---
+
+## 📥 Quick Start Setup
+
+### Prerequisites
+* **Python 3.12+** ([Download](https://www.python.org/downloads/))
+* **Node.js 20+** ([Download](https://nodejs.org/))
+
+### 1. Repository Setup
 ```bash
 git clone https://github.com/abdulraheemnohri/AI-Defender-Enterprise.git
 cd AI-Defender-Enterprise
 ```
 
----
-
-### **2. Set Up the Backend**
+### 2. Launch FastAPI Backend Service
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
+source venv/bin/activate  # Linux/macOS
 venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
-The backend will run at `http://localhost:8000`.
+The FastAPI backend serves REST endpoints at `http://localhost:8000`.
 
----
-
-### **3. Set Up the Frontend**
+### 3. Launch React UI Client
 ```bash
 cd frontend
 npm install
-npm start
+npm run build   # Compile optimized production bundle
+npm start       # Run localized workspace developer server
 ```
-The frontend will run at `http://localhost:3000`.
+The React client runs locally at `http://localhost:3000`.
 
 ---
 
-### **4. Build the Desktop App (Tauri)**
+## 🧪 Testing and Verification Suite
+
+The repository features a rigorous backend unit testing suite covering session lockouts, YARA/Sigma compilers, benchmarking engines, host isolation toggles, and rules life cycles.
+
+Run tests using Pytest:
 ```bash
-npm install --save-dev @tauri-apps/cli
-npm run tauri dev
-```
-To build the installer:
-```bash
-npm run tauri build
-```
-The installer will be in `frontend/src-tauri/target/release/`.
-
----
-
-## **📂 Project Structure**
-```
-AI-Defender-Enterprise/
-├── backend/                  # Python + FastAPI
-│   ├── api/
-│   │   └── endpoints/        # FastAPI routes
-│   ├── ai/                   # AI models and engines
-│   ├── detection/            # Threat detection logic
-│   ├── monitor/              # System monitoring
-│   ├── firewall/             # Firewall management
-│   ├── quarantine/           # Quarantine system
-│   ├── database/             # SQLite/PostgreSQL
-│   └── main.py               # FastAPI app
-│
-├── frontend/                 # React + TypeScript
-│   ├── src/
-│   │   ├── components/       # Reusable UI components
-│   │   ├── pages/            # Main views
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── context/          # React Context
-│   │   ├── utils/            # Utility functions
-│   │   ├── styles/           # Global styles
-│   │   ├── App.tsx           # Main app
-│   │   └── index.tsx         # Entry point
-│   └── package.json
-│
-├── models/                   # Pre-trained AI models (ONNX, GGUF)
-├── rules/                    # Detection rules (YARA, Sigma, IOC)
-├── logs/                     # Log storage
-├── quarantine/               # Isolated files
-├── docs/                     # Documentation
-├── scripts/                  # Helper scripts
-└── README.md                 # This file
+cd backend
+pytest test_main.py
 ```
 
 ---
 
-## **🤝 Contributing**
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
----
-
-## **📜 License**
+## 📜 License
 This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
