@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import ai, auth, dashboard, firewall, network, scan, system, usb
+from api.routes import ai, auth, dashboard, firewall, network, scan, system, usb, models, users, rules
 from services.bootstrap import initialize_database
 
 
@@ -38,6 +38,9 @@ app.include_router(network.router)
 app.include_router(firewall.router)
 app.include_router(ai.router)
 app.include_router(usb.router)
+app.include_router(models.router)
+app.include_router(users.router)
+app.include_router(rules.router)
 
 
 @app.get("/")
@@ -54,5 +57,8 @@ def read_root():
             "firewall",
             "ai",
             "usb",
+            "models",
+            "users",
+            "rules"
         ],
     }

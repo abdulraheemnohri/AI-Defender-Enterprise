@@ -121,4 +121,111 @@ export const getNetworkConnections = async () => {
   return response.data;
 };
 
+// --- NEW MODULES API ENDPOINTS ---
+
+// 1. AI Models Management
+export const fetchModels = async () => {
+  const response = await api.get("/models");
+  return response.data;
+};
+
+export const toggleActiveModel = async (id: string) => {
+  const response = await api.post(`/models/${id}/toggle`);
+  return response.data;
+};
+
+export const fetchModelConfig = async () => {
+  const response = await api.get("/models/config");
+  return response.data;
+};
+
+export const updateModelConfig = async (config: any) => {
+  const response = await api.post("/models/config", config);
+  return response.data;
+};
+
+export const runModelBenchmark = async (id: string) => {
+  const response = await api.post("/models/benchmark", { model_id: id });
+  return response.data;
+};
+
+export const registerModel = async (data: {
+  name: string;
+  weights_path: string;
+  size_gb: number;
+  accelerator: string;
+}) => {
+  const response = await api.post("/models/register", data);
+  return response.data;
+};
+
+// 2. User & Access Session controls
+export const fetchUsers = async () => {
+  const response = await api.get("/users");
+  return response.data;
+};
+
+export const createNewUser = async (data: {
+  username: string;
+  password?: string;
+  role: string;
+  email: string;
+  department: string;
+}) => {
+  const response = await api.post("/users", data);
+  return response.data;
+};
+
+export const deleteUser = async (username: string) => {
+  const response = await api.delete(`/users/${username}`);
+  return response.data;
+};
+
+export const fetchActiveSessions = async () => {
+  const response = await api.get("/users/sessions");
+  return response.data;
+};
+
+export const revokeSession = async (sessId: string) => {
+  const response = await api.post(`/users/sessions/${sessId}/revoke`);
+  return response.data;
+};
+
+export const fetchAuditLogs = async () => {
+  const response = await api.get("/users/audit-logs");
+  return response.data;
+};
+
+// 3. Signature & Behavioral Rules
+export const fetchRules = async () => {
+  const response = await api.get("/rules");
+  return response.data;
+};
+
+export const createRule = async (data: {
+  name: string;
+  type: string;
+  content: string;
+  description: string;
+  tags: string[];
+}) => {
+  const response = await api.post("/rules", data);
+  return response.data;
+};
+
+export const toggleRule = async (id: string) => {
+  const response = await api.post(`/rules/${id}/toggle`);
+  return response.data;
+};
+
+export const compileRule = async (data: { content: string; type: string }) => {
+  const response = await api.post("/rules/compile", data);
+  return response.data;
+};
+
+export const deleteRule = async (id: string) => {
+  const response = await api.delete(`/rules/${id}`);
+  return response.data;
+};
+
 export default api;

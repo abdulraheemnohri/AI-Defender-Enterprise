@@ -25,12 +25,17 @@ import {
   TableHead,
   TableRow,
   Chip,
+  LinearProgress,
+  CircularProgress,
 } from "@mui/material";
 import SecurityRoundedIcon from "@mui/icons-material/SecurityRounded";
 import ComputerRoundedIcon from "@mui/icons-material/ComputerRounded";
 import FolderSharedRoundedIcon from "@mui/icons-material/FolderSharedRounded";
 import CloudSyncRoundedIcon from "@mui/icons-material/CloudSyncRounded";
 import KeyboardRoundedIcon from "@mui/icons-material/KeyboardRounded";
+import SettingsInputHdmiRoundedIcon from "@mui/icons-material/SettingsInputHdmiRounded";
+import BugReportRoundedIcon from "@mui/icons-material/BugReportRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 
 import { PanelCard } from "../components/common/PanelCard";
 
@@ -64,10 +69,26 @@ export const SettingsPage = () => {
   const [rubberDuckyDefense, setRubberDuckyDefense] = useState(true);
   const [passwordComplexity, setPasswordComplexity] = useState(true);
 
+  // Device Lockdowns (Kernel Controls)
+  const [lockCamera, setLockCamera] = useState(false);
+  const [lockMicrophone, setLockMicrophone] = useState(false);
+  const [lockBluetooth, setLockBluetooth] = useState(true);
+  const [lockPrinter, setLockPrinter] = useState(false);
+  const [lockWiFi, setLockWiFi] = useState(false);
+
+  // Vulnerability states
+  const [scanningVulnerabilities, setScanningVulnerabilities] = useState(false);
+  const [vulnScanResults, setVulnScanResults] = useState<any[] | null>(null);
+  const [patchApprovalStatus, setPatchApprovalStatus] = useState<Record<string, string>>({
+    "KB5035853": "Pending Approval",
+    "KB5036122": "Pending Approval",
+    "Realtek Audio v6.0": "Approved",
+  });
+
   // Asset states
   const [assets, setAssets] = useState(initialAssets);
 
-  // Handle local Role switching simulation (updates localStorage & reloads or syncs Layout)
+  // Handle local Role switching simulation
   const handleRoleSwitch = (newRole: string) => {
     setActiveRole(newRole);
     const saved = localStorage.getItem("ai_defender_session");
@@ -83,6 +104,32 @@ export const SettingsPage = () => {
       localStorage.setItem("ai_defender_session", JSON.stringify({ username: "administrator", role: newRole, token: "demo-token" }));
       window.location.reload();
     }
+  };
+
+  // Run Vulnerability Scan simulation
+  const runVulnerabilityScan = () => {
+    setScanningVulnerabilities(true);
+    setVulnScanResults(null);
+
+    setTimeout(() => {
+      setScanningVulnerabilities(false);
+      setVulnScanResults([
+        { id: "vuln-01", type: "Windows Update", item: "KB5035853 Security Patch", severity: "HIGH", description: "Missing critical cumulative local privilege escalation security update" },
+        { id: "vuln-02", type: "Weak Passwords", item: "Guest Account password", severity: "CRITICAL", description: "Standard default Guest user password length less than 8 characters" },
+        { id: "vuln-03", type: "Open Ports", item: "Port 445 (SMB) Active Listener", severity: "MEDIUM", description: "SMB shares listener is accessible. Suggest blocking via local Firewall policy" },
+        { id: "vuln-04", type: "Drivers Version", item: "Realtek Audio Driver v6.0.9", severity: "LOW", description: "Vulnerable audio driver stack allowing arbitrary heap buffer overflows" },
+        { id: "vuln-05", type: "Windows Update", item: "KB5036122 Hyper-V Patch", severity: "HIGH", description: "Hyper-V Escape vulnerability allowing sandbox container bypass" },
+      ]);
+    }, 1200);
+  };
+
+  // Handle patch approval workflows
+  const handlePatchStatusUpdate = (patchId: string, status: string) => {
+    setPatchApprovalStatus((prev) => ({
+      ...prev,
+      [patchId]: status,
+    }));
+    alert(`Patch update '${patchId}' status updated to '${status}' immediately!`);
   };
 
   // Export backups
@@ -112,14 +159,15 @@ export const SettingsPage = () => {
           Platform Settings & Governance
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Configure security baselines, simulate role switching (RBAC), view computer asset inventory, and manage platform backups.
+          Configure security baselines, simulate role switching (RBAC), lock down kernel devices, scan for system vulnerabilities, and manage backups.
         </Typography>
       </Stack>
 
       <Box sx={{ borderBottom: 1, borderColor: "rgba(255, 255, 255, 0.08)", mb: 2 }}>
         <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)}>
           <Tab label="General & User RBAC Switcher" />
-          <Tab label="USB & Password Policies" />
+          <Tab label="Device & Password Policies" />
+          <Tab label="Vulnerability & Patch Center" />
           <Tab label="Workstation Assets" />
           <Tab label="Backup & Hotkeys Guide" />
         </Tabs>
@@ -152,8 +200,8 @@ export const SettingsPage = () => {
                     Active Permissions Profile:
                   </Typography>
                   <Typography variant="body2">
-                    {activeRole === "Administrator" && "• Full authority to write firewall policies, terminate active processes, mount USB policies, and run all heuristic scanners."}
-                    {activeRole === "Security Analyst" && "• Authority to run quick/full scans, quarantine files, consult local AI chat, and add whitelists."}
+                    {activeRole === "Administrator" && "• Full authority to write firewall policies, terminate active processes, mount USB policies, lock down kernel device peripherals, and run all scanners."}
+                    {activeRole === "Security Analyst" && "• Authority to run quick/full scans, quarantine files, consult local AI chat, and manage whitelists."}
                     {activeRole === "SOC Operator" && "• Authority to monitor active network sockets, processes list, and view log events. Process terminations are restricted."}
                     {activeRole === "Auditor" && "• Read-only access to compiled logs and automated report generation sheets. No scanning or firewall modifications are allowed."}
                     {activeRole === "Read Only" && "• Visual telemetry monitoring only. Edit capabilities are disabled across the environment."}
@@ -195,11 +243,11 @@ export const SettingsPage = () => {
         </Grid>
       )}
 
-      {/* Tab 1: Policies */}
+      {/* Tab 1: Device and Password Policies */}
       {activeTab === 1 && (
         <Grid container spacing={2.5}>
           <Grid item xs={12} md={7}>
-            <PanelCard title="USB Removable Media Policies" subtitle="Hardware controller baseline configurations">
+            <PanelCard title="USB & Peripherals Media Policies" subtitle="Hardware controller baseline configurations">
               <Stack spacing={3} sx={{ py: 1 }}>
                 <FormControl fullWidth variant="outlined" size="small">
                   <InputLabel id="usb-mode-label">USB Storage Enforcement Mode</InputLabel>
@@ -225,9 +273,42 @@ export const SettingsPage = () => {
                   }
                 />
 
-                <Paper sx={{ p: 2, border: "1px dashed rgba(255,255,255,0.1)", bgcolor: "rgba(0,0,0,0.15)" }}>
+                <Divider />
+
+                <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                  KERNEL DEVICE ACCESS LOCKDOWNS (DEVICE CONTROL)
+                </Typography>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={<Switch checked={lockCamera} onChange={(e) => setLockCamera(e.target.checked)} />}
+                      label={<Typography variant="body2">Disable Web Camera</Typography>}
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={lockMicrophone} onChange={(e) => setLockMicrophone(e.target.checked)} />}
+                      label={<Typography variant="body2">Disable Microphone</Typography>}
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={lockBluetooth} onChange={(e) => setLockBluetooth(e.target.checked)} />}
+                      label={<Typography variant="body2">Block Bluetooth Access</Typography>}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={<Switch checked={lockPrinter} onChange={(e) => setLockPrinter(e.target.checked)} />}
+                      label={<Typography variant="body2">Block Printer Spools</Typography>}
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={lockWiFi} onChange={(e) => setLockWiFi(e.target.checked)} />}
+                      label={<Typography variant="body2">Strict Wi-Fi Lockouts</Typography>}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Paper sx={{ p: 2, border: "1px dashed rgba(255,255,255,0.1)", bgcolor: "rgba(0,0,0,0.1)" }}>
                   <Typography variant="caption" color="text.secondary">
-                    ℹ️ <strong>Policy Enforced:</strong> USB policy changes apply to the kernel controller immediately. Blocked mass storage drives are safely unmounted in the background.
+                    ℹ️ <strong>Policy Enforced:</strong> Device controls are pushed directly to the Windows driver stack immediately, safely sandboxing external hardware channels.
                   </Typography>
                 </Paper>
               </Stack>
@@ -259,8 +340,124 @@ export const SettingsPage = () => {
         </Grid>
       )}
 
-      {/* Tab 2: Assets */}
+      {/* Tab 2: Vulnerability Scanner & Patch Management */}
       {activeTab === 2 && (
+        <Grid container spacing={2.5}>
+          {/* Vulnerability scan trigger */}
+          <Grid item xs={12} lg={7}>
+            <PanelCard title="Windows Vulnerability Inspector" subtitle="Scan for open ports, missing Windows Updates, weak registry hashes, and outdated software">
+              <Stack spacing={2}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  disabled={scanningVulnerabilities}
+                  onClick={runVulnerabilityScan}
+                  startIcon={<RefreshRoundedIcon />}
+                  sx={{ alignSelf: "flex-start" }}
+                >
+                  {scanningVulnerabilities ? "Scanning drivers & registries..." : "Start Vulnerability Scan"}
+                </Button>
+
+                {scanningVulnerabilities && (
+                  <Box sx={{ width: "100%", my: 1 }}>
+                    <LinearProgress color="secondary" />
+                  </Box>
+                )}
+
+                {vulnScanResults ? (
+                  <TableContainer component={Paper} sx={{ bgcolor: "transparent", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700 }}>Severity</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Check Family</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Target / Vulnerability</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {vulnScanResults.map((v) => (
+                          <TableRow key={v.id}>
+                            <TableCell>
+                              <Chip
+                                label={v.severity}
+                                size="small"
+                                color={v.severity === "CRITICAL" ? "error" : v.severity === "HIGH" ? "warning" : "primary"}
+                              />
+                            </TableCell>
+                            <TableCell>{v.type}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>{v.item}</TableCell>
+                            <TableCell sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{v.description}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ p: 4, fontStyle: "italic", textAlign: "center" }}>
+                    No scan results loaded yet. Click "Start Vulnerability Scan" to audit local workstation registries and missing patches.
+                  </Typography>
+                )}
+              </Stack>
+            </PanelCard>
+          </Grid>
+
+          {/* Patch Approval Workflow */}
+          <Grid item xs={12} lg={5}>
+            <PanelCard title="Patch Management approval Desk" subtitle="Verify and deploy Microsoft Cumulative KBs or device drivers">
+              <Stack spacing={2.5}>
+                <Typography variant="caption" color="text.secondary">
+                  Manage the deployment cycle of missing operating system security updates. Approved patches will build and execute during the next Scheduled task.
+                </Typography>
+
+                <Paper sx={{ p: 2, border: "1px solid rgba(255,255,255,0.06)", bgcolor: "rgba(0,0,0,0.15)" }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" fontWeight={700}>KB5035853 Security Update</Typography>
+                      <Chip label={patchApprovalStatus["KB5035853"]} size="small" color={patchApprovalStatus["KB5035853"] === "Approved" ? "success" : "warning"} />
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary">Protects against local kernel privilege escalations.</Typography>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button size="small" variant="outlined" color="success" onClick={() => handlePatchStatusUpdate("KB5035853", "Approved")}>Approve</Button>
+                      <Button size="small" variant="outlined" color="error" onClick={() => handlePatchStatusUpdate("KB5035853", "Declined")}>Decline</Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+
+                <Paper sx={{ p: 2, border: "1px solid rgba(255,255,255,0.06)", bgcolor: "rgba(0,0,0,0.15)" }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" fontWeight={700}>KB5036122 Hyper-V Patch</Typography>
+                      <Chip label={patchApprovalStatus["KB5036122"]} size="small" color={patchApprovalStatus["KB5036122"] === "Approved" ? "success" : "warning"} />
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary">Prevents sandbox virtual container breakout vectors.</Typography>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button size="small" variant="outlined" color="success" onClick={() => handlePatchStatusUpdate("KB5036122", "Approved")}>Approve</Button>
+                      <Button size="small" variant="outlined" color="error" onClick={() => handlePatchStatusUpdate("KB5036122", "Declined")}>Decline</Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+
+                <Paper sx={{ p: 2, border: "1px solid rgba(255,255,255,0.06)", bgcolor: "rgba(0,0,0,0.15)" }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" fontWeight={700}>Realtek Audio Device driver v6.0</Typography>
+                      <Chip label={patchApprovalStatus["Realtek Audio v6.0"] || "Approved"} size="small" color="success" />
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary">Vulnerable Audio driver stack update.</Typography>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button size="small" variant="outlined" color="warning" onClick={() => handlePatchStatusUpdate("Realtek Audio v6.0", "Rolled Back")}>Rollback Update</Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              </Stack>
+            </PanelCard>
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Tab 3: Assets */}
+      {activeTab === 3 && (
         <Grid container spacing={2.5}>
           <Grid item xs={12}>
             <PanelCard title="Enterprise Computer Assets Inventory" subtitle="Workstations monitored by this local platform agent">
@@ -298,8 +495,8 @@ export const SettingsPage = () => {
         </Grid>
       )}
 
-      {/* Tab 3: Backups & Keyboard Shortcuts */}
-      {activeTab === 3 && (
+      {/* Tab 4: Backups & Keyboard Shortcuts */}
+      {activeTab === 4 && (
         <Grid container spacing={2.5}>
           {/* Backup */}
           <Grid item xs={12} md={6}>

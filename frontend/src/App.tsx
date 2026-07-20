@@ -11,6 +11,11 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { Login } from "./pages/Login";
 import { Layout } from "./components/layout/Layout";
 
+// New Workspace Pages
+import { ModelManagement } from "./pages/ModelManagement";
+import { RulesPage } from "./pages/RulesPage";
+import { UserManagement } from "./pages/UserManagement";
+
 
 export const App = () => {
   const [session, setSession] = useState<{ username: string; role: string; token: string } | null>(null);
@@ -79,6 +84,9 @@ export const App = () => {
           <Route path="/security-center" element={<SecurityCenter />} />
           <Route path="/threat-detection" element={<ThreatDetection />} />
           <Route path="/ai-defender" element={<AIBuilder />} />
+          <Route path="/model-management" element={<ModelManagement />} />
+          <Route path="/rules-management" element={<RulesPage />} />
+          <Route path="/user-management" element={<UserManagement />} />
           <Route path="/firewall" element={<FirewallPage />} />
           <Route path="/network" element={<NetworkPage />} />
           <Route path="/reports" element={<ReportsPage />} />
