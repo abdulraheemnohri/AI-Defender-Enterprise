@@ -1,4 +1,3 @@
-# Material UI Theme Configuration
 import { createTheme } from "@mui/material/styles";
 
 export const theme = createTheme({
@@ -20,27 +19,29 @@ export const theme = createTheme({
       main: "#F44336", // Red
     },
     background: {
-      default: "#121212",
-      paper: "#1E1E1E",
+      default: "#0B1020",
+      paper: "#131B31",
     },
     text: {
-      primary: "#E0E0E0",
-      secondary: "#B0B0B0",
+      primary: "#E7ECF7",
+      secondary: "#9CA8C3",
     },
   },
   typography: {
-    fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
-    h1: { fontSize: "2rem", fontWeight: 500 },
-    h2: { fontSize: "1.75rem", fontWeight: 500 },
-    h3: { fontSize: "1.5rem", fontWeight: 500 },
+    fontFamily: "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
+    h1: { fontSize: "2.5rem", fontWeight: 700 },
+    h2: { fontSize: "2rem", fontWeight: 700 },
+    h3: { fontSize: "1.5rem", fontWeight: 600 },
   },
   components: {
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: "12px",
-          backgroundColor: "#1E1E1E",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "20px",
+          backgroundColor: "rgba(19, 27, 49, 0.88)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 20px 45px rgba(0, 0, 0, 0.22)",
         },
       },
     },
@@ -50,6 +51,18 @@ export const theme = createTheme({
           borderRadius: "8px",
           textTransform: "none",
         },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: "999px",
+        },
+      },
+    },
+    MuiTextField: {
+      defaultProps: {
+        variant: "outlined",
       },
     },
   },
