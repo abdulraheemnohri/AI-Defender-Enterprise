@@ -1,54 +1,121 @@
-name: CI Pipeline
+name: AI Defender Enterprise CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
 
 jobs:
-  test-backend:
+
+  backend:
+    name: Backend Test & Quality
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install dependencies
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
+          pip install pytest black isort flake8
+
       - name: Run backend tests
+        working-directory: backend
         run: |
-          cd backend
-          pytest tests/ -v
+          pytest tests -v
 
-  test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
+      - name: Code formatting check
+        working-directory: backend
         run: |
-          cd frontend
-          npm install
-      - name: Run frontend tests
-        run: |
-          cd frontend
-          npm test -- --watchAll=false
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Lint backend
-        run: |
-          cd backend
-          pip install black isort flake8
           black --check .
           isort --check .
           flake8 .
-      - name: Lint frontend
+
+
+  frontend:
+    name: Frontend Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
         run: |
-          cd frontend
+          npm test -- --watchAll=false
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm run build
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: |
           npm run lint
+
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Python security scan
+        run: |
+          pip install bandit
+          bandit -r backend || true
+
+      - name: Dependency audit
+        working-directory: frontend
+        run: |
+          npm audit --audit-level=high || true
+
+
+  ci-status:
+    name: CI Complete
+    needs:
+      - backend
+      - frontend
+      - security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Success
+        run: |
+          echo "AI Defender Enterprise CI passed successfully"
