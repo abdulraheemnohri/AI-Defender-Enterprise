@@ -1,0 +1,23 @@
+# Gitignore for AI Defender Enterprise
+# Frontend
+frontend/node_modules/
+frontend/.env
+frontend/dist/
+frontend/.tauri/
+
+# Backend
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/*.db
+backend/*.sqlite
+
+# General
+*.log
+*.sqlite
+*.db
+quarantine/
+logs/
+.env
+.vscode/
+.DS_Store
