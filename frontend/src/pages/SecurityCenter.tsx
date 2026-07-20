@@ -17,6 +17,8 @@ import {
   Chip,
   IconButton,
   Divider,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
@@ -25,6 +27,7 @@ import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
 import BugReportRoundedIcon from "@mui/icons-material/BugReportRounded";
+import TerminalRoundedIcon from "@mui/icons-material/TerminalRounded";
 
 import { PanelCard } from "../components/common/PanelCard";
 import { startScan, explainThreat } from "../utils/api";
@@ -73,6 +76,15 @@ export const SecurityCenter = () => {
   const [blacklists, setBlacklists] = useState<string[]>(["tor.exe", "miner.exe", "9b8a2c1f5e8d7a6c3b"]);
   const [whitelistInput, setWhitelistInput] = useState("");
   const [blacklistInput, setBlacklistInput] = useState("");
+
+  // Sandbox states
+  const [sandboxFile, setSandboxFile] = useState("");
+  const [sandboxNetIsolation, setSandboxNetIsolation] = useState(true);
+  const [sandboxFileIsolation, setSandboxFileIsolation] = useState(true);
+  const [sandboxRegVirtualization, setSandboxRegVirtualization] = useState(true);
+  const [sandboxRunning, setSandboxRunning] = useState(false);
+  const [sandboxLogs, setSandboxLogs] = useState<string[]>([]);
+  const [sandboxVerdict, setSandboxVerdict] = useState<string | null>(null);
 
   const runSelectedScan = async () => {
     setScanning(true);
@@ -171,6 +183,42 @@ export const SecurityCenter = () => {
     }
   };
 
+  // Run Virtual Sandbox execution
+  const runSandboxSim = () => {
+    if (!sandboxFile.trim()) {
+      alert("Please enter program file name or select sample to sandbox.");
+      return;
+    }
+    setSandboxRunning(true);
+    setSandboxVerdict(null);
+    setSandboxLogs([
+      `[SANDBOX] Initializing virtualization container for: '${sandboxFile}'`,
+      `[SANDBOX] File System Isolation: ${sandboxFileIsolation ? "ENABLED (Write redirection)" : "DISABLED"}`,
+      `[SANDBOX] Outbound Network Isolation: ${sandboxNetIsolation ? "ENABLED (Mock DNS/IP Blocked)" : "DISABLED"}`,
+      `[SANDBOX] Registry Virtualization: ${sandboxRegVirtualization ? "ENABLED (HKEY_LOCAL_MACHINE redirected)" : "DISABLED"}`,
+      `[SANDBOX] Spawning child process virtual hook... (PID: 9912)`,
+    ]);
+
+    let logsCount = 0;
+    const interval = setInterval(() => {
+      logsCount++;
+      if (logsCount === 1) {
+        setSandboxLogs((l) => [...l, "[SANDBOX LOG] [NtCreateFile] Attempted to modify critical system binary: C:\\Windows\\System32\\kernel32.dll -> Blocked & Redirected."]);
+      } else if (logsCount === 2) {
+        setSandboxLogs((l) => [...l, "[SANDBOX LOG] [RegSetValueEx] Tried to write run-key startup value: HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Spyware -> Virtualized."]);
+      } else if (logsCount === 3) {
+        setSandboxLogs((l) => [...l, "[SANDBOX LOG] [ConnectOutboundSockets] Tried to handshake IP: 185.220.101.7:8080 (Known Tor proxy) -> Dropped cleanly."]);
+      } else if (logsCount === 4) {
+        setSandboxLogs((l) => [...l, "[SANDBOX LOG] Process exited cleanly with status code 0."]);
+        clearInterval(interval);
+        setSandboxRunning(false);
+        setSandboxVerdict(
+          `AI Verdict on Sandboxing Run:\n• Executable tried to execute classic "persistence writing" and "system files tampering" techniques.\n• Isolation guards functioned perfectly, leaving local system unaltered.\n• Threat Rank: HIGH RISK. Action: Sandbox recommends moving '${sandboxFile}' to Quarantine Vault immediately.`
+        );
+      }
+    }, 1000);
+  };
+
   return (
     <Stack spacing={3}>
       <Stack spacing={0.5}>
@@ -178,7 +226,7 @@ export const SecurityCenter = () => {
           Security Center
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Centralized scans, real-time protection posture, whitelist exclusions, and quarantined file containment.
+          Centralized scans, real-time protection posture, whitelist exclusions, quarantined file containment, and sandboxed isolated execution.
         </Typography>
       </Stack>
 
@@ -188,6 +236,7 @@ export const SecurityCenter = () => {
           <Tab label="Quarantine Desk" />
           <Tab label="Whitelist Exclusions" />
           <Tab label="Antivirus Blacklist" />
+          <Tab label="Virtual Sandboxing" />
         </Tabs>
       </Box>
 
@@ -521,6 +570,105 @@ export const SecurityCenter = () => {
               <Typography variant="body2" color="text.secondary">
                 This prevents crypto-miners, P2P tools, or unauthorized Tor proxies from establishing local persistence.
               </Typography>
+            </PanelCard>
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Tab 4: Virtual Sandboxing */}
+      {activeTab === 4 && (
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} lg={7}>
+            <PanelCard title="Virtual Sandboxing Container" subtitle="Isolate and execute suspicious binaries in a virtualized container">
+              <Stack spacing={3}>
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    size="small"
+                    label="Executable path to Sandbox"
+                    placeholder="e.g. suspicious_installer.exe"
+                    value={sandboxFile}
+                    onChange={(e) => setSandboxFile(e.target.value)}
+                    fullWidth
+                  />
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    disabled={sandboxRunning}
+                    onClick={runSandboxSim}
+                    startIcon={<TerminalRoundedIcon />}
+                  >
+                    {sandboxRunning ? "Executing..." : "Run in Sandbox"}
+                  </Button>
+                </Stack>
+
+                <Stack spacing={1.5}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    SANDBOX CONTAINER ISOLATION CONTROLS
+                  </Typography>
+                  <FormControlLabel
+                    control={<Switch checked={sandboxFileIsolation} onChange={(e) => setSandboxFileIsolation(e.target.checked)} />}
+                    label={<Typography variant="body2">Isolate & redirect file system modifications</Typography>}
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={sandboxNetIsolation} onChange={(e) => setSandboxNetIsolation(e.target.checked)} />}
+                    label={<Typography variant="body2">Isolate outbound networks (Fake internet handshakes)</Typography>}
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={sandboxRegVirtualization} onChange={(e) => setSandboxRegVirtualization(e.target.checked)} />}
+                    label={<Typography variant="body2">Isolate Registry mutations (redirect HKLM write attempts)</Typography>}
+                  />
+                </Stack>
+
+                {/* Sandbox terminal trace */}
+                <Box
+                  sx={{
+                    p: 2,
+                    height: 180,
+                    bgcolor: "rgba(0,0,0,0.45)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 2,
+                    fontFamily: "monospace",
+                    fontSize: "0.75rem",
+                    color: "primary.light",
+                    overflowY: "auto",
+                  }}
+                >
+                  {sandboxLogs.length > 0 ? (
+                    sandboxLogs.map((log, index) => (
+                      <Typography key={index} variant="caption" component="div" sx={{ color: log.includes("Blocked") || log.includes("Dropped") ? "error.light" : "primary.light" }}>
+                        {log}
+                      </Typography>
+                    ))
+                  ) : (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+                      Sandbox Container Idle. Enter executable above and click "Run in Sandbox" to trigger isolated trace monitors...
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
+            </PanelCard>
+          </Grid>
+
+          <Grid item xs={12} lg={5}>
+            <PanelCard title="Sandbox Forensics Report" subtitle="AI telemetry explanation">
+              {sandboxRunning ? (
+                <Stack spacing={2} alignItems="center" sx={{ py: 6 }}>
+                  <CircularProgress size={24} color="secondary" />
+                  <Typography variant="caption" color="text.secondary">
+                    Capturing system-calls traces in isolated sandbox workspace...
+                  </Typography>
+                </Stack>
+              ) : sandboxVerdict ? (
+                <Paper sx={{ p: 2, border: "1px solid rgba(33, 150, 243, 0.2)", bgcolor: "rgba(33, 150, 243, 0.04)", borderRadius: 2 }}>
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: "1.4rem" }}>
+                    {sandboxVerdict}
+                  </Typography>
+                </Paper>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center", fontStyle: "italic" }}>
+                  Launch an isolated program inside the container sandbox to populate forensic behavioral indicators report.
+                </Typography>
+              )}
             </PanelCard>
           </Grid>
         </Grid>
