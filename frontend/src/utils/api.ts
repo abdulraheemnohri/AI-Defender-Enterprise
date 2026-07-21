@@ -65,6 +65,16 @@ export const getSystemInfo = async () => {
   return response.data;
 };
 
+export const getIsolationStatus = async () => {
+  const response = await api.get("/system/isolation");
+  return response.data;
+};
+
+export const toggleIsolationStatus = async () => {
+  const response = await api.post("/system/isolation/toggle");
+  return response.data;
+};
+
 export const getFirewallRules = async () => {
   const response = await api.get("/firewall/rules");
   return response.data;
@@ -78,6 +88,17 @@ export const addFirewallRule = async (rule: {
   enabled?: boolean;
 }) => {
   const response = await api.post("/firewall/rules", rule);
+  return response.data;
+};
+
+export const promoteSuggestedRule = async (rule: {
+  name: string;
+  action: string;
+  target: string;
+  protocol?: string;
+  enabled?: boolean;
+}) => {
+  const response = await api.post("/firewall/rules/promote", rule);
   return response.data;
 };
 

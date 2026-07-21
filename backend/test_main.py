@@ -285,3 +285,47 @@ detection:
     # Cleanup rule
     del_res = client.delete(f"/rules/{added_rule_id}")
     assert del_res.status_code == 200
+
+
+def test_workstation_host_isolation():
+    # 1. Fetch initial status (unisolated)
+    status_res = client.get("/system/isolation")
+    assert status_res.status_code == 200
+    assert status_res.json()["isolated"] is False
+
+    # 2. Toggle status (isolate)
+    toggle_res = client.post("/system/isolation/toggle")
+    assert toggle_res.status_code == 200
+    assert toggle_res.json()["isolated"] is True
+    assert "Successfully" in toggle_res.json()["message"] or "isolation" in toggle_res.json()["message"]
+
+    # 3. Check /system/info response model reflects stricter states
+    info_res = client.get("/system/info")
+    assert info_res.status_code == 200
+    assert info_res.json()["firewall_status"] == "STRICT_ISOLATION_ACTIVE"
+    assert info_res.json()["ai_status"] == "CONTAINMENT_PROTOCOLS_ENGAGED"
+
+    # 4. Toggle back
+    toggle_res2 = client.post("/system/isolation/toggle")
+    assert toggle_res2.status_code == 200
+    assert toggle_res2.json()["isolated"] is False
+
+
+def test_firewall_rule_promotion_endpoint():
+    payload = {
+        "name": "Promoted Block EternalBlue SMB",
+        "action": "block",
+        "target": "Any:445",
+        "protocol": "TCP",
+        "enabled": True
+    }
+    promote_res = client.post("/firewall/rules/promote", json=payload)
+    assert promote_res.status_code == 200
+    data = promote_res.json()
+    assert data["name"] == "Promoted Block EternalBlue SMB"
+    assert data["enabled"] is True
+    assert data["id"] is not None
+
+    # Cleanup promoted rule
+    rule_id = data["id"]
+    client.delete(f"/firewall/rules/{rule_id}")
